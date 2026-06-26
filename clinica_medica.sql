@@ -1,7 +1,7 @@
 CREATE DATABASE clinica_medica;
 USE clinica_medica;
 
-CREATE TABLE pacientes
+CREATE TABLE if not exists pacientes
 (
   id_pac INT PRIMARY KEY AUTO_INCREMENT, 
   nome_pac VARCHAR(100) NOT NULL, 
@@ -21,7 +21,7 @@ CREATE TABLE pacientes
   complemento_pac VARCHAR(255)
 );
 
-CREATE TABLE medicos
+CREATE TABLE if not exists medicos
 (
   id_med INT PRIMARY KEY AUTO_INCREMENT,
   nome_med VARCHAR(100) NOT NULL,
@@ -29,20 +29,20 @@ CREATE TABLE medicos
   crm_med VARCHAR(10) NOT NULL,
   uf_crm_med CHAR(2) NOT NULL,
   sexo_med CHAR(1) NOT NULL,
-  telefone_med CHAR(11) NOT NULL UNIQUE,
+  telefone_med CHAR(11) NOT NULL,
   email_med VARCHAR(255) NOT NULL,
   data_contrato_med DATE NOT NULL,
   salario_med NUMERIC(10,2) NOT NULL
 );
 
-CREATE TABLE especialidades 
+CREATE TABLE if not exists especialidades 
 (
   id_especialidade INT PRIMARY KEY AUTO_INCREMENT,
   nome_especialidade VARCHAR(50) UNIQUE NOT NULL
   );
 
 -- Relacionamento N:N entre medicos e especialidades
-CREATE TABLE medico_especialidade (
+CREATE TABLE if not exists medico_especialidade (
     id_med INT NOT NULL,
     id_especialidade INT NOT NULL,
 
@@ -53,7 +53,7 @@ CREATE TABLE medico_especialidade (
 );
 
 -- Relacionamento 1:1 com paciente
-CREATE TABLE prontuario_paciente
+CREATE TABLE if not exists prontuario_paciente
 (
   id_pac INT PRIMARY KEY,
   -- Peso e altura
@@ -73,7 +73,7 @@ CREATE TABLE prontuario_paciente
 );
 
 -- 3 Relacionamentos 1:N com pacientes, medicos e especialidades 
-CREATE TABLE agendamento_consulta
+CREATE TABLE if not exists agendamento_consulta
 (
   id_agend_consult INT PRIMARY KEY AUTO_INCREMENT,
   id_pac INT NOT NULL,
@@ -94,7 +94,7 @@ CREATE TABLE agendamento_consulta
 );
 
 -- Relacionamento 1:1
-CREATE TABLE consulta_medica
+CREATE TABLE if not exists consulta_medica
 (
   id_agend_consult INT PRIMARY KEY,
   data_atendimento DATE NOT NULL,
@@ -114,7 +114,7 @@ CREATE TABLE consulta_medica
 );
 
 -- Registros tabelas pacientes (70 registros)
-INSERT INTO pacientes (nome_pac, cpf_pac, sexo_pac, data_nasc_pac, telefone_pac, email_pac, data_cadastro_pac, rua_pac, bairro_pac, num_casa_pac, cidade_pac, uf_pac, cep_pac, complemento_pac) VALUES
+INSERT INTO  pacientes  (nome_pac, cpf_pac, sexo_pac, data_nasc_pac, telefone_pac, email_pac, data_cadastro_pac, rua_pac, bairro_pac, num_casa_pac, cidade_pac, uf_pac, cep_pac, complemento_pac) VALUES
 ('Mariana Silva Oliveira', '12345678901', 'F', '1996-04-12', '85981234567', 'mariana.silva.oliveira@gmail.com', '2021-03-15', 'Rua das Flores', 'Centro', '012', 'Itapajé', 'CE', '61900000', ''),
 ('João Pereira Santos', '98765432100', 'M', '1950-11-02', '85999876543', 'joao.pereira.santos@gmail.com', '2020-07-22', 'Avenida Brasil', 'Bela Vista', '078', 'Itapajé', 'CE', '61901000', 'Apto 2'),
 ('Ana Beatriz Costa Lima', '11122233344', 'F', '1989-06-30', '85991234567', 'ana.beatriz.costa.lima@gmail.com', '2019-12-05', 'Rua do Comércio', 'São José', '005', 'Uruburetama', 'CE', '62520000', ''),
@@ -222,7 +222,7 @@ VALUES
 ('Vanessa Assis', '01234567929', '123475', 'CE', 'F', '85989870543', 'vanessa.assis@example.com', '2021-10-15', 9100.00);
 
 
-INSERT INTO especialidades (nome_especialidade) VALUES
+INSERT INTO especialidades (nome_especialidade) VALUES 
 ('Clínica Geral'),
 ('Cardiologia'),
 ('Pediatria'),
@@ -572,3 +572,84 @@ VALUES
 (98, '2026-06-24', '11:40:00', 'Dor nas articulações dos dedos', '3 semanas', 'Artrite reumatoide', 'Possível artrite', 'Solicitado FAN e fator reumatoide', '15 dias', 'Iniciar investigação'),
 (99, '2026-06-25', '13:10:00', 'Manchas vermelhas na pele', '5 dias', 'Sífilis descartada', 'Erupção viral', 'Antialérgico', '10 dias', 'Sem outras manifestações'),
 (100, '2026-06-25', '13:40:00', 'Dormência nos pés', '1 mês', 'Neuropatia diabética', 'Polineuropatia periférica', 'Controle glicêmico rigoroso', '30 dias', 'Solicitado eletroneuromiografia');
+
+-- left join/date_format
+Select pacientes.nome_pac as nome_paciente, date_format(agendamento_consulta.data_agend_consult, '%d/%m/%Y') as data_agendamento
+from pacientes
+left join agendamento_consulta
+on pacientes.id_pac = agendamento_consulta.id_pac;
+
+-- inner join/date_format
+select pacientes.nome_pac as nome_paciente, agendamento_consulta.hora_agend_consult as hora_agendamento, date_format(agendamento_consulta.data_agend_consult, '%d/%m/%Y') as data_agendamento, agendamento_consulta.sala_agend_consult as sala, agendamento_consulta.andar_agend_consult as andar
+from pacientes
+inner join agendamento_consulta
+on pacientes.id_pac = agendamento_consulta.id_pac;
+
+-- inner join/gruop by/count
+select medicos.nome_med as nome_medico, count(agendamento_consulta.id_agend_consult) as quantidade_agendamento
+from agendamento_consulta
+inner join medicos
+on agendamento_consulta.id_med = medicos.id_med
+group by medicos.id_med;
+
+-- inner join/gruop by/count
+select medicos.nome_med as nome_medico, count(medico_especialidade.id_especialidade) as quantidade_especialidades
+from medico_especialidade
+inner join medicos
+on medicos.id_med = medico_especialidade.id_med
+group by medico_especialidade.id_med
+order by medicos.nome_med;
+
+-- rigth join/where/date_format
+select especialidades.nome_especialidade as especialidade, date_format(agendamento_consulta.data_agend_consult, '%d/%m/%Y') as data_agendamento
+from agendamento_consulta
+right join especialidades
+on agendamento_consulta.id_especialidade = especialidades.id_especialidade
+where especialidades.nome_especialidade = 'Ortopedia';
+
+-- ceil/group by/having
+select nome_med as nome_medico, salario_med as teto_salarial
+from medicos
+group by id_med having ceil(salario_med)>10000;
+
+-- floor/group by/having
+select nome_med as nome_medico, salario_med as piso_salarial
+from medicos
+group by id_med having floor(salario_med)<8000;
+
+-- curdate/where/group by
+select nome_pac as nome_paciente, timestampdiff(year, data_nasc_pac, curdate()) as idade
+from pacientes
+where timestampdiff(year, data_nasc_pac, curdate())>=60
+group by id_pac;
+
+-- min
+select min(salario_med) as menor_salario
+from medicos;
+
+-- max
+select max(salario_med) as maior_salario
+from medicos;
+
+-- where/date_format
+select date_format(data_agend_consult, '%d/%m/%Y') as data_agendada, hora_agend_consult as hora_agendada, sala_agend_consult as sala, andar_agend_consult as andar
+from agendamento_consulta
+where status_agend_consult = 'Confirmado'
+and data_agend_consult = '2026-06-03';
+
+-- inner join/where
+select pacientes.nome_pac as nome_paciente, prontuario_paciente.alergias_pac as alergia
+from pacientes
+inner join prontuario_paciente
+on pacientes.id_pac = prontuario_paciente.id_pac
+where prontuario_paciente.alergias_pac <> 'Nenhuma';
+
+-- where/upper
+select upper(nome_med) as nome_medico, sexo_med as sexo
+from medicos
+where sexo_med = 'F';
+
+-- where/lower
+select lower(nome_med) as nome_medico, sexo_med as sexo
+from medicos
+where sexo_med = 'M';
